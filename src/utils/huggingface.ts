@@ -105,6 +105,7 @@ export async function loadModelConfig(modelId: string): Promise<HuggingFaceConfi
     const response = await downloadFile({
       repo: modelId,
       path: "config.json",
+      raw: true,
     })
     if (!response) {
       throw new Error(`Failed to fetch config for ${modelId}`);
@@ -122,19 +123,20 @@ export async function loadModelConfig(modelId: string): Promise<HuggingFaceConfi
  */
 export async function loadSafetensorsIndex(modelId: string): Promise<any> {
   try {
-    const indexUrl = `https://huggingface.co/${modelId}/resolve/main/model.safetensors.index.json`;
-    const response = await fetch(indexUrl);
-    
-    if (!response.ok) {
-      console.warn(`Could not fetch safetensors index for ${modelId}: ${response.statusText}`);
-      return null;
+    // Direct URL to the config.json file on Hugging Face Hub
+    const response = await downloadFile({
+      repo: modelId,
+      path: "model.safetensors.index.json",
+      raw: true,
+    })
+    if (!response) {
+      throw new Error(`Failed to fetch index for ${modelId}`);
     }
     
-    const safetensorsIndex = await response.json();
-    return safetensorsIndex;
+    return JSON.parse(await response.text());
   } catch (error) {
-    console.warn('Error loading safetensors index:', error);
-    return null;
+    console.error('Error loading model index:', error);
+    throw new Error(`Failed to load index for model ${modelId}`);
   }
 }
 
