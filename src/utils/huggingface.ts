@@ -1,4 +1,5 @@
 import type { ModelPreset, QuantizationType } from '../types/calculator';
+import { downloadFile } from "@huggingface/hub";
 
 interface HuggingFaceConfig {
   architectures?: string[];
@@ -101,16 +102,15 @@ export async function searchModels(
 export async function loadModelConfig(modelId: string): Promise<HuggingFaceConfig> {
   try {
     // Direct URL to the config.json file on Hugging Face Hub
-    const configUrl = `https://huggingface.co/${modelId}/resolve/main/config.json`;
-
-    const response = await fetch(configUrl);
-    
-    if (!response.ok) {
-      throw new Error(`Failed to fetch config for ${modelId}: ${response.statusText}`);
+    const response = await downloadFile({
+      repo: modelId,
+      path: "config.json",
+    })
+    if (!response) {
+      throw new Error(`Failed to fetch config for ${modelId}`);
     }
     
-    const config = await response.json();
-    return config;
+    return JSON.parse(await response.text());
   } catch (error) {
     console.error('Error loading model config:', error);
     throw new Error(`Failed to load configuration for model ${modelId}`);
