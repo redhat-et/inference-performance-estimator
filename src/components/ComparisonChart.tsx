@@ -129,14 +129,20 @@ export const ComparisonChart: React.FC<ComparisonChartProps> = ({ availableModel
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
       return (
-        <div className="bg-white p-3 border border-gray-200 rounded-lg shadow-lg">
-          <p className="font-semibold text-gray-900 mb-2">{label}</p>
+        <Paper sx={{ p: 1.5, border: 1, borderColor: 'grey.300' }}>
+          <Typography variant="body2" sx={{ fontWeight: 'bold', mb: 1 }}>
+            {label}
+          </Typography>
           {payload.map((entry: any, index: number) => (
-            <p key={index} style={{ color: entry.color }} className="text-sm">
+            <Typography 
+              key={index} 
+              variant="caption" 
+              sx={{ color: entry.color, display: 'block' }}
+            >
               {`${entry.name}: ${formatTooltipValue(entry.value, entry.name)}`}
-            </p>
+            </Typography>
           ))}
-        </div>
+        </Paper>
       );
     }
     return null;
