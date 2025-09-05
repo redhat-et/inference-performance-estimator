@@ -1,5 +1,5 @@
 import type { ModelPreset, QuantizationType } from '../types/calculator';
-import { downloadFile } from "@huggingface/hub";
+import { downloadFile, listModels } from "@huggingface/hub";
 
 interface HuggingFaceConfig {
   architectures?: string[];
@@ -33,6 +33,9 @@ interface ModelInfo {
   likes?: number;
   library_name?: string;
   pipeline_tag?: string;
+  private?: boolean;
+  gated?: false | "auto" | "manual";
+  updatedAt?: Date | string;
   [key: string]: any;
 }
 
@@ -42,53 +45,47 @@ export interface HFModelSearchResult {
 }
 
 /**
- * Search for models on Hugging Face Hub
+ * Search for models on Hugging Face Hub using the official SDK
  */
 export async function searchModels(
   query: string = '',
   options: {
     limit?: number;
-    sort?: 'trending' | 'downloads' | 'likes' | 'updated';
-    direction?: -1 | 1;
     filter?: string;
-    full?: boolean;
   } = {}
 ): Promise<HFModelSearchResult> {
   try {
-    const searchParams = new URLSearchParams();
+    const models: ModelInfo[] = [];
     
-    if (query) {
-      searchParams.append('search', query);
-    }
+    // Convert filter option to task if it exists
+    const taskFilter = options.filter === 'text-generation' ? 'text-generation' : undefined;
     
-    searchParams.append('limit', (options.limit || 20).toString());
-    
-    if (options.sort) {
-      searchParams.append('sort', options.sort);
-    }
-    
-    if (options.direction) {
-      searchParams.append('direction', options.direction.toString());
-    }
-    
-    if (options.filter) {
-      searchParams.append('filter', options.filter);
-    }
-    
-    if (options.full) {
-      searchParams.append('full', 'true');
-    }
+    // Use the official SDK to list models
+    // The SDK returns models in an optimized order (likely by popularity/downloads)
+    const modelIterator = listModels({
+      search: {
+        query: query || undefined,
+        task: taskFilter,
+      },
+      limit: options.limit || 20,
+    });
 
-    const response = await fetch(`https://huggingface.co/api/models?${searchParams.toString()}`);
-    
-    if (!response.ok) {
-      throw new Error(`Failed to search models: ${response.statusText}`);
+    // Collect results from async generator
+    for await (const model of modelIterator) {
+      models.push({
+        id: model.name, // Use model.name (repository name) instead of model.id (internal hash)
+        tags: [], // Not directly available in the SDK response
+        downloads: model.downloads,
+        likes: model.likes,
+        pipeline_tag: model.task,
+        private: model.private,
+        gated: model.gated,
+        updatedAt: model.updatedAt
+      });
     }
-    
-    const models = await response.json();
     
     return {
-      models: models || []
+      models
     };
   } catch (error) {
     console.error('Error searching models:', error);
