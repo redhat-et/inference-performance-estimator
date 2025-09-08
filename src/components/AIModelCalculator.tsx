@@ -21,7 +21,7 @@ import {
   Error as ErrorIcon,
 } from '@mui/icons-material';
 import type { GPUSpecs, ModelSpecs, CalculationResults, SystemOverhead } from '../types/calculator';
-import { DEFAULT_INFERENCE_PARAMS, DEFAULT_SYSTEM_OVERHEAD } from '../types/calculator';
+import { DEFAULT_SYSTEM_OVERHEAD } from '../types/calculator';
 import { calculatePerformance } from '../utils/calculations';
 import { useGPUs } from '../hooks/useDataLoader';
 import { GPUSelector } from './GPUSelector';

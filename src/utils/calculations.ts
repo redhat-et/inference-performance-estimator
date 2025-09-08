@@ -160,7 +160,7 @@ function calculateKVCachePerToken(model: ModelSpecs): number {
 
   const nLayers = model.nLayers;
   const dHead = model.headDimension;
-  const nKvHeads = model.nKvHeads || model.nHeads; // nKvHeads takes priority, fallback to nHeads
+  const nKvHeads = model.nKvHeads || model.nHeads!; // nKvHeads takes priority, fallback to nHeads (guaranteed non-null by check above)
   const quantInfo = getQuantizationInfo(model.quantization);
   
   // KV cache stores both key and value for each layer, for each token

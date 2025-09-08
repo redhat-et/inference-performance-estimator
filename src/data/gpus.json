@@ -1,21 +1,49 @@
 [
   {
-    "name": "NVIDIA T4",
-    "computeBandwidth": 65,
+    "name": "Intel\u00ae Core\u2122 Ultra 9 Processor 285K",
+    "computeBandwidth": 4.32,
     "memoryBandwidth": 300,
-    "memorySize": 16
+    "memorySize": 256,
+    "price": 599.0
   },
   {
-    "name": "NVIDIA A10",
-    "computeBandwidth": 125,
-    "memoryBandwidth": 600,
-    "memorySize": 24
+    "name": "Intel\u00ae Core\u2122 Ultra 9 Processor 285T",
+    "computeBandwidth": 4.2,
+    "memoryBandwidth": 300,
+    "memorySize": 256,
+    "price": 549.0
   },
   {
-    "name": "NVIDIA A100 SXM 80GB",
-    "computeBandwidth": 312,
-    "memoryBandwidth": 2039,
-    "memorySize": 80
+    "name": "Jetson AGX Thor Developer Kit",
+    "computeBandwidth": 2070.0,
+    "memoryBandwidth": 273.0,
+    "memorySize": 128,
+    "price": 3499.0
+  },
+  {
+    "name": "Jetson T5000",
+    "computeBandwidth": 2070.0,
+    "memoryBandwidth": 273.0,
+    "memorySize": 128,
+    "price": 3199.0
+  },
+  {
+    "name": "AI 100 Ultra",
+    "computeBandwidth": 104.39999999999999,
+    "memoryBandwidth": 100,
+    "memorySize": 128
+  },
+  {
+    "name": "AI 80 Ultra",
+    "computeBandwidth": 74.16,
+    "memoryBandwidth": 100,
+    "memorySize": 128
+  },
+  {
+    "name": "Intel\u00ae Core\u2122 Ultra 9 Processor 285H",
+    "computeBandwidth": 11.879999999999999,
+    "memoryBandwidth": 150,
+    "memorySize": 128
   },
   {
     "name": "NVIDIA H100 SXM",
@@ -24,105 +52,301 @@
     "memorySize": 80
   },
   {
-    "name": "NVIDIA RTX 4090",
-    "computeBandwidth": 165,
-    "memoryBandwidth": 1008,
-    "memorySize": 24
-  },
-  {
-    "name": "Jetson AGX Thor",
-    "computeBandwidth": 200,
-    "memoryBandwidth": 273,
-    "memorySize": 128
-  },
-  {
-    "name": "Jetson T5000",
-    "computeBandwidth": 200,
-    "memoryBandwidth": 273,
-    "memorySize": 128
+    "name": "NVIDIA A100 SXM 80GB",
+    "computeBandwidth": 312,
+    "memoryBandwidth": 2039,
+    "memorySize": 80
   },
   {
     "name": "Jetson T4000",
-    "computeBandwidth": 120,
-    "memoryBandwidth": 273,
+    "computeBandwidth": 1200.0,
+    "memoryBandwidth": 273.0,
     "memorySize": 64
   },
   {
     "name": "Jetson AGX Orin 64GB",
     "computeBandwidth": 27,
     "memoryBandwidth": 204.8,
+    "memorySize": 64,
+    "price": 1799.0
+  },
+  {
+    "name": "Jetson AGX Orin Developer Kit",
+    "computeBandwidth": 27,
+    "memoryBandwidth": 204.8,
+    "memorySize": 64,
+    "price": 1999.0
+  },
+  {
+    "name": "Jetson AGX Orin Industrial",
+    "computeBandwidth": 27,
+    "memoryBandwidth": 204.8,
+    "memorySize": 64,
+    "price": 2349.0
+  },
+  {
+    "name": "Jetson AGX Xavier (64GB)",
+    "computeBandwidth": 5.5,
+    "memoryBandwidth": 136.5,
+    "memorySize": 64,
+    "price": 1399.0
+  },
+  {
+    "name": "Snapdragon X Elite",
+    "computeBandwidth": 5.3999999999999995,
+    "memoryBandwidth": 150,
     "memorySize": 64
+  },
+  {
+    "name": "AI 100 Pro",
+    "computeBandwidth": 48.0,
+    "memoryBandwidth": 100,
+    "memorySize": 32
   },
   {
     "name": "Jetson AGX Orin 32GB",
     "computeBandwidth": 20,
     "memoryBandwidth": 204.8,
+    "memorySize": 32,
+    "price": 999.0
+  },
+  {
+    "name": "Intel\u00ae Core\u2122 Ultra 9 Processor 288V",
+    "computeBandwidth": 14.399999999999999,
+    "memoryBandwidth": 200,
     "memorySize": 32
+  },
+  {
+    "name": "Jetson AGX Xavier (32GB)",
+    "computeBandwidth": 5.5,
+    "memoryBandwidth": 136.5,
+    "memorySize": 32,
+    "price": 999.0
+  },
+  {
+    "name": "Jetson AGX Xavier Industrial",
+    "computeBandwidth": 5.5,
+    "memoryBandwidth": 136.5,
+    "memorySize": 32,
+    "price": 1449.0
+  },
+  {
+    "name": "NVIDIA RTX 4090",
+    "computeBandwidth": 165,
+    "memoryBandwidth": 1008,
+    "memorySize": 24
+  },
+  {
+    "name": "NVIDIA A10",
+    "computeBandwidth": 125,
+    "memoryBandwidth": 600,
+    "memorySize": 24
+  },
+  {
+    "name": "NVIDIA T4",
+    "computeBandwidth": 65,
+    "memoryBandwidth": 300,
+    "memorySize": 16
+  },
+  {
+    "name": "AI 100 Standard",
+    "computeBandwidth": 42.0,
+    "memoryBandwidth": 100,
+    "memorySize": 16
+  },
+  {
+    "name": "AI 80 Standard",
+    "computeBandwidth": 22.8,
+    "memoryBandwidth": 100,
+    "memorySize": 16
   },
   {
     "name": "Jetson Orin NX 16GB",
     "computeBandwidth": 16,
     "memoryBandwidth": 102.4,
-    "memorySize": 16
+    "memorySize": 16,
+    "price": 699.0
+  },
+  {
+    "name": "Jetson Xavier NX (16GB)",
+    "computeBandwidth": 3.6,
+    "memoryBandwidth": 59.7,
+    "memorySize": 16,
+    "price": 579.0
   },
   {
     "name": "Jetson Orin NX 8GB",
     "computeBandwidth": 12,
     "memoryBandwidth": 102.4,
-    "memorySize": 8
+    "memorySize": 8,
+    "price": 479.0
   },
   {
     "name": "Jetson Orin Nano 8GB",
     "computeBandwidth": 7,
-    "memoryBandwidth": 102,
+    "memoryBandwidth": 102.0,
+    "memorySize": 8,
+    "price": 249.0
+  },
+  {
+    "name": "Jetson Orin Nano Super Developer Kit",
+    "computeBandwidth": 7,
+    "memoryBandwidth": 102.0,
+    "memorySize": 8,
+    "price": 249.0
+  },
+  {
+    "name": "Dragonwing QCS8550",
+    "computeBandwidth": 5.76,
+    "memoryBandwidth": 150,
     "memorySize": 8
   },
   {
-    "name": "Jetson Orin Nano 4GB",
-    "computeBandwidth": 3.4,
-    "memoryBandwidth": 51,
-    "memorySize": 4
-  },
-  {
-    "name": "Jetson AGX Xavier 64GB",
-    "computeBandwidth": 5.5,
-    "memoryBandwidth": 136.5,
-    "memorySize": 64
-  },
-  {
-    "name": "Jetson AGX Xavier 32GB",
-    "computeBandwidth": 5.5,
-    "memoryBandwidth": 136.5,
-    "memorySize": 32
-  },
-  {
-    "name": "Jetson Xavier NX 16GB",
-    "computeBandwidth": 3.6,
-    "memoryBandwidth": 59.7,
-    "memorySize": 16
-  },
-  {
-    "name": "Jetson Xavier NX 8GB",
-    "computeBandwidth": 3.6,
-    "memoryBandwidth": 59.7,
+    "name": "AMD Ryzen Embedded 8840U",
+    "computeBandwidth": 4.56,
+    "memoryBandwidth": 200,
     "memorySize": 8
+  },
+  {
+    "name": "AMD Ryzen Embedded 8845HS",
+    "computeBandwidth": 4.56,
+    "memoryBandwidth": 200,
+    "memorySize": 8
+  },
+  {
+    "name": "AM69A",
+    "computeBandwidth": 3.84,
+    "memoryBandwidth": 100,
+    "memorySize": 8,
+    "price": 151.535
+  },
+  {
+    "name": "AMD Ryzen Embedded 8640U",
+    "computeBandwidth": 3.7199999999999998,
+    "memoryBandwidth": 200,
+    "memorySize": 8
+  },
+  {
+    "name": "AMD Ryzen Embedded 8645HS",
+    "computeBandwidth": 3.7199999999999998,
+    "memoryBandwidth": 200,
+    "memorySize": 8
+  },
+  {
+    "name": "Jetson Xavier NX (8GB)",
+    "computeBandwidth": 3.6,
+    "memoryBandwidth": 59.7,
+    "memorySize": 8,
+    "price": 479.0
+  },
+  {
+    "name": "AI HAT+ (26 TOPs)",
+    "computeBandwidth": 3.12,
+    "memoryBandwidth": 100,
+    "memorySize": 8,
+    "price": 70.0
+  },
+  {
+    "name": "TDA4VP-Q1",
+    "computeBandwidth": 2.88,
+    "memoryBandwidth": 100,
+    "memorySize": 8,
+    "price": 144.562
+  },
+  {
+    "name": "TDA4APE-Q1",
+    "computeBandwidth": 1.92,
+    "memoryBandwidth": 100,
+    "memorySize": 8,
+    "price": 103.959
+  },
+  {
+    "name": "AI HAT+ (13 TOPs)",
+    "computeBandwidth": 1.56,
+    "memoryBandwidth": 100,
+    "memorySize": 8,
+    "price": 110.0
   },
   {
     "name": "Jetson TX2",
-    "computeBandwidth": 1.3,
+    "computeBandwidth": 1.33,
     "memoryBandwidth": 59.7,
     "memorySize": 8
   },
   {
-    "name": "Jetson TX2 NX",
-    "computeBandwidth": 1.3,
+    "name": "Jetson TX2i",
+    "computeBandwidth": 1.26,
+    "memoryBandwidth": 51.2,
+    "memorySize": 8,
+    "price": 849.0
+  },
+  {
+    "name": "RZ/V2H",
+    "computeBandwidth": 0.96,
+    "memoryBandwidth": 100,
+    "memorySize": 8,
+    "price": 80.0
+  },
+  {
+    "name": "TDA4VE-Q1",
+    "computeBandwidth": 0.96,
+    "memoryBandwidth": 100,
+    "memorySize": 8,
+    "price": 76.245
+  },
+  {
+    "name": "AM67A",
+    "computeBandwidth": 0.48,
+    "memoryBandwidth": 100,
+    "memorySize": 8,
+    "price": 48.219
+  },
+  {
+    "name": "RZ/V2N",
+    "computeBandwidth": 0.48,
+    "memoryBandwidth": 100,
+    "memorySize": 8,
+    "price": 40.0
+  },
+  {
+    "name": "i.M8 Plus Dual",
+    "computeBandwidth": 0.27599999999999997,
+    "memoryBandwidth": 100,
+    "memorySize": 8,
+    "price": 40.0
+  },
+  {
+    "name": "i.M8 Plus Quad",
+    "computeBandwidth": 0.27599999999999997,
+    "memoryBandwidth": 100,
+    "memorySize": 8,
+    "price": 50.0
+  },
+  {
+    "name": "Jetson Orin Nano 4GB",
+    "computeBandwidth": 7,
+    "memoryBandwidth": 51.0,
+    "memorySize": 4,
+    "price": 229.0
+  },
+  {
+    "name": "Jetson TX2 4GB",
+    "computeBandwidth": 1.33,
     "memoryBandwidth": 51.2,
     "memorySize": 4
   },
   {
+    "name": "Jetson TX2 NX",
+    "computeBandwidth": 1.33,
+    "memoryBandwidth": 51.2,
+    "memorySize": 4,
+    "price": 199.0
+  },
+  {
     "name": "Jetson Nano",
-    "computeBandwidth": 0.47,
+    "computeBandwidth": 0.472,
     "memoryBandwidth": 25.6,
-    "memorySize": 4
+    "memorySize": 4,
+    "price": 129.0
   }
 ]

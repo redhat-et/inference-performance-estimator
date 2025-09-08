@@ -12,7 +12,6 @@ import {
   AccessTime as ClockIcon,
   Bolt as BoltIcon,
   TrendingUp as TrendingUpIcon,
-  Speed as SpeedIcon,
   Memory as MemoryIcon,
   Error as ErrorIcon,
 } from '@mui/icons-material';

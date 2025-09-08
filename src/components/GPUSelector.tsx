@@ -1,9 +1,6 @@
 import React, { useState } from 'react';
 import {
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
+  Autocomplete,
   TextField,
   Box,
   Typography,
@@ -26,14 +23,14 @@ export const GPUSelector: React.FC<GPUSelectorProps> = ({ selectedGPU, onGPUChan
     memorySize: 16,
   });
 
-  const handlePresetChange = (gpuName: string) => {
-    if (gpuName === 'custom') {
-      setIsCustom(true);
-      onGPUChange(customGPU);
-    } else {
-      setIsCustom(false);
-      const gpu = availableGPUs.find(g => g.name === gpuName);
-      if (gpu) {
+
+  const handleGPUSelect = (_event: any, gpu: GPUSpecs | null) => {
+    if (gpu) {
+      if (gpu.name === 'Custom GPU') {
+        setIsCustom(true);
+        onGPUChange(customGPU);
+      } else {
+        setIsCustom(false);
         onGPUChange(gpu);
       }
     }
@@ -47,23 +44,46 @@ export const GPUSelector: React.FC<GPUSelectorProps> = ({ selectedGPU, onGPUChan
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-      {/* GPU Preset Selector */}
-      <FormControl fullWidth size="small">
-        <InputLabel id="gpu-select-label">Select GPU</InputLabel>
-        <Select
-          labelId="gpu-select-label"
-          value={isCustom ? 'custom' : (selectedGPU?.name || '')}
-          label="Select GPU"
-          onChange={(e) => handlePresetChange(e.target.value as string)}
-        >
-          {availableGPUs.map((gpu) => (
-            <MenuItem key={gpu.name} value={gpu.name}>
-              {gpu.name}
-            </MenuItem>
-          ))}
-          <MenuItem value="custom">Custom GPU</MenuItem>
-        </Select>
-      </FormControl>
+      {/* GPU Searchable Selector */}
+      <Autocomplete
+        options={[...availableGPUs, { name: 'Custom GPU', computeBandwidth: 0, memoryBandwidth: 0, memorySize: 0 }]}
+        value={isCustom ? { name: 'Custom GPU', computeBandwidth: 0, memoryBandwidth: 0, memorySize: 0 } : selectedGPU || null}
+        onChange={handleGPUSelect}
+        getOptionLabel={(option) => option?.name || ''}
+        isOptionEqualToValue={(option, value) => option?.name === value?.name}
+        renderInput={(params) => (
+          <TextField
+            {...params}
+            label="Search & Select GPU"
+            size="small"
+            placeholder="Type to search GPUs..."
+          />
+        )}
+        renderOption={(props, option) => (
+          <Box component="li" {...props} key={option.name}>
+            <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', width: '100%' }}>
+              <Typography variant="body2" sx={{ fontWeight: 'medium' }}>
+                {option.name}
+              </Typography>
+              {option.name !== 'Custom GPU' && (
+                <Typography variant="caption" color="text.secondary">
+                  {option.computeBandwidth} TFLOPS, {option.memorySize}GB
+                  {option.price && ` • $${option.price}`}
+                </Typography>
+              )}
+            </Box>
+          </Box>
+        )}
+        filterOptions={(options, params) => {
+          const { inputValue } = params;
+          const filtered = options.filter((option) =>
+            option.name.toLowerCase().includes(inputValue.toLowerCase())
+          );
+          return filtered;
+        }}
+        size="small"
+        fullWidth
+      />
 
       {/* Custom GPU Inputs */}
       {isCustom && (

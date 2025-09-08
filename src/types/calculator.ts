@@ -3,6 +3,7 @@ export interface GPUSpecs {
   computeBandwidth: number; // TFLOPS
   memoryBandwidth: number; // GB/s
   memorySize: number; // GB
+  price?: number; // USD, optional
 }
 
 export interface ModelPreset {
