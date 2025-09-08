@@ -12,6 +12,9 @@ export interface ModelPreset {
   headDimension: number;
   nLayers: number;
   nHeads: number;
+  nKvHeads?: number; // number of key-value heads (for grouped-query attention)
+  hiddenSize?: number; // hidden dimension size (d_model)
+  intermediateSize?: number; // intermediate size in feed-forward network
   defaultQuantization: QuantizationType;
   isFromHub?: boolean; // Flag to indicate if loaded from HF Hub
   hubUrl?: string; // URL to the model on HF Hub
@@ -27,6 +30,9 @@ export interface ModelSpecs {
   headDimension?: number; // d_head - dimension of a single attention head
   nLayers?: number; // number of transformer layers
   nHeads?: number; // number of attention heads (d_model = d_head * n_heads)
+  nKvHeads?: number; // number of key-value heads (for grouped-query attention)
+  hiddenSize?: number; // hidden dimension size (d_model)
+  intermediateSize?: number; // intermediate size in feed-forward network
 }
 
 export interface SystemOverhead {
@@ -52,6 +58,8 @@ export interface CalculationResults {
   totalGenerationTime: number; // ms
   throughputTokensPerSecond: number;
   modelSizeGB: number; // Model size in GB
+  systemOverheadGB: number; // Fixed system overhead in GB
+  activationMemoryGB: number; // PyTorch activation memory in GB
   memoryUtilization: number; // Percentage of GPU memory used
   hasMemoryWarning: boolean; // True if model doesn't fit in GPU memory
   memoryWarningMessage?: string; // Warning message if memory insufficient
@@ -59,7 +67,7 @@ export interface CalculationResults {
   freeMemoryForKVCacheGB: number; // Available memory for KV cache in GB
   maxKVCacheTokens: number; // Maximum tokens that can fit in KV cache
   maxBatchSize: number; // Maximum batch size based on available memory
-  totalMemoryUsedGB: number; // Total memory used (model + KV cache + overhead) in GB
+  totalMemoryUsedGB: number; // Total memory used (model + overhead + activation + KV cache) in GB
   currentKVCacheGB: number; // Current KV cache size for current batch and sequence length in GB
   hasPerformanceWarning: boolean; // True if throughput is too low
   performanceWarningMessage?: string; // Warning message for poor performance

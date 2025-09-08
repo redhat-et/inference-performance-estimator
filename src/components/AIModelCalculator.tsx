@@ -9,6 +9,7 @@ import {
   Tab,
   AppBar,
   Toolbar,
+  Alert,
 } from '@mui/material';
 import {
   Computer as ComputerIcon,
@@ -17,6 +18,7 @@ import {
   Calculate as CalculateIcon,
   BarChart as BarChartIcon,
   Tune as TuneIcon,
+  Error as ErrorIcon,
 } from '@mui/icons-material';
 import type { GPUSpecs, ModelSpecs, CalculationResults, SystemOverhead } from '../types/calculator';
 import { DEFAULT_INFERENCE_PARAMS, DEFAULT_SYSTEM_OVERHEAD } from '../types/calculator';
@@ -57,6 +59,7 @@ export const AIModelCalculator: React.FC = () => {
   const [modelSpecs, setModelSpecs] = useState<ModelSpecs | null>(null);
   const [systemOverhead, setSystemOverhead] = useState<SystemOverhead>(DEFAULT_SYSTEM_OVERHEAD);
   const [results, setResults] = useState<CalculationResults | null>(null);
+  const [calculationError, setCalculationError] = useState<string | null>(null);
   const [tabValue, setTabValue] = useState(0);
 
   // Set default GPU when GPUs are loaded
@@ -66,22 +69,7 @@ export const AIModelCalculator: React.FC = () => {
     }
   }, [gpus, selectedGPU]);
 
-  // Set default model specs if not already set
-  useEffect(() => {
-    if (!modelSpecs) {
-      setModelSpecs({
-        parameters: 7.0, // Default 7B model
-        sequenceLength: 4096,
-        batchSize: DEFAULT_INFERENCE_PARAMS.batchSize,
-        promptTokens: DEFAULT_INFERENCE_PARAMS.promptTokens,
-        outputTokens: DEFAULT_INFERENCE_PARAMS.outputTokens,
-        quantization: 'FP16',
-        headDimension: 128,
-        nLayers: 32,
-        nHeads: 32,
-      });
-    }
-  }, [modelSpecs]);
+  // Don't set default model specs - force users to load from HuggingFace Hub
 
   const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
     setTabValue(newValue);
@@ -90,8 +78,16 @@ export const AIModelCalculator: React.FC = () => {
   // Calculate results whenever GPU, model specs, or system overhead change
   useEffect(() => {
     if (selectedGPU && modelSpecs) {
-      const calculationResults = calculatePerformance(selectedGPU, modelSpecs, systemOverhead);
-      setResults(calculationResults);
+      try {
+        const calculationResults = calculatePerformance(selectedGPU, modelSpecs, systemOverhead);
+        setResults(calculationResults);
+        setCalculationError(null); // Clear any previous errors
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'Unknown calculation error';
+        console.error('Calculation error:', errorMessage);
+        setCalculationError(errorMessage);
+        setResults(null); // Clear results when calculation fails
+      }
     }
   }, [selectedGPU, modelSpecs, systemOverhead]);
 
@@ -254,12 +250,10 @@ export const AIModelCalculator: React.FC = () => {
                           Model Configuration
                         </Typography>
                       </Box>
-                      {modelSpecs && (
-                        <ModelInputs
-                          modelSpecs={modelSpecs}
-                          onModelChange={setModelSpecs}
-                        />
-                      )}
+                      <ModelInputs
+                        modelSpecs={modelSpecs}
+                        onModelChange={setModelSpecs}
+                      />
                     </CardContent>
                   </Card>
                 </Box>
@@ -268,7 +262,26 @@ export const AIModelCalculator: React.FC = () => {
 
             {/* Results Section */}
             <Box sx={{ flex: 1, minWidth: 0 }}>
-              {results && selectedGPU && (
+              {calculationError && (
+                <Alert 
+                  severity="error" 
+                  icon={<ErrorIcon />}
+                  sx={{ mb: 3 }}
+                  onClose={() => setCalculationError(null)}
+                >
+                  <Typography variant="h6" sx={{ mb: 1 }}>
+                    Model Architecture Missing
+                  </Typography>
+                  <Typography variant="body2">
+                    {calculationError}
+                  </Typography>
+                  <Typography variant="body2" sx={{ mt: 1, fontWeight: 'bold' }}>
+                    💡 Solution: Load a model from HuggingFace Hub to get complete architecture parameters.
+                  </Typography>
+                </Alert>
+              )}
+              
+              {results && selectedGPU && !calculationError && (
                 <Card elevation={3}>
                   <CardContent sx={{ p: 3 }}>
                     <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>

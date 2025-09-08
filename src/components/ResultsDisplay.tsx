@@ -2,8 +2,6 @@ import React from 'react';
 import {
   Box,
   Typography,
-  Card,
-  CardContent,
   Paper,
   Alert,
   Divider,
@@ -72,245 +70,177 @@ export const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ gpu, results }) 
         </Alert>
       )}
 
-      {/* Memory Usage Display */}
-      <Paper sx={{ p: 2, backgroundColor: results.hasMemoryWarning ? 'error.light' : 'info.light', color: results.hasMemoryWarning ? 'error.contrastText' : 'info.contrastText' }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-          <MemoryIcon sx={{ fontSize: 18 }} />
-          <Typography variant="subtitle2" sx={{ fontWeight: 'bold' }}>
-            Total Memory Usage
-          </Typography>
-        </Box>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-          <Typography variant="h5" sx={{ fontWeight: 'bold' }}>
-            {results.totalMemoryUsedGB.toFixed(1)} GB
-          </Typography>
+      {/* GPU Memory Requirements Breakdown */}
+      <Paper sx={{ p: 3, backgroundColor: results.hasMemoryWarning ? 'error.light' : 'success.light', color: results.hasMemoryWarning ? 'error.contrastText' : 'success.contrastText' }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+          <MemoryIcon sx={{ fontSize: 20 }} />
           <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
-            {results.memoryUtilization.toFixed(1)}%
+            GPU Memory Requirements
           </Typography>
         </Box>
-        <Typography variant="caption" sx={{ opacity: 0.9 }}>
-          Model + KV cache + overhead / {gpu.memorySize} GB total GPU memory
-        </Typography>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 1, opacity: 0.8 }}>
-          <Typography variant="caption">Model: {results.modelSizeGB.toFixed(1)} GB</Typography>
-          <Typography variant="caption">KV Cache: {(results.currentKVCacheGB * 1000).toFixed(0)} MB</Typography>
+        
+        {/* Individual Components */}
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, mb: 2 }}>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Typography variant="body2" sx={{ fontWeight: 'medium' }}>
+              1. Model Weight Memory
+            </Typography>
+            <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
+              {results.modelSizeGB.toFixed(2)} GB
+            </Typography>
+          </Box>
+          
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Typography variant="body2" sx={{ fontWeight: 'medium' }}>
+              2. System Overhead Memory
+            </Typography>
+            <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
+              {results.systemOverheadGB.toFixed(2)} GB
+            </Typography>
+          </Box>
+          
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Typography variant="body2" sx={{ fontWeight: 'medium' }}>
+              3. PyTorch Activation Memory
+            </Typography>
+            <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
+              {results.activationMemoryGB.toFixed(2)} GB
+            </Typography>
+          </Box>
+          
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Typography variant="body2" sx={{ fontWeight: 'medium' }}>
+              4. KV Cache Memory
+            </Typography>
+            <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
+              {results.currentKVCacheGB.toFixed(2)} GB
+            </Typography>
+          </Box>
         </Box>
-      </Paper>
 
-      {/* KV Cache Analysis */}
-      <Paper sx={{ p: 2, backgroundColor: 'warning.light', color: 'warning.contrastText' }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-          <MemoryIcon sx={{ fontSize: 18 }} />
-          <Typography variant="subtitle2" sx={{ fontWeight: 'bold' }}>
-            KV Cache Analysis
+        <Divider sx={{ my: 1.5, opacity: 0.5 }} />
+        
+        {/* Total */}
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 2 }}>
+          <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
+            ✅ Required GPU Memory:
           </Typography>
-        </Box>
-        <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2, mb: 1 }}>
-          <Box>
-            <Typography variant="caption" sx={{ opacity: 0.9 }}>
-              Per Token
+          <Box sx={{ textAlign: 'right' }}>
+            <Typography variant="h5" sx={{ fontWeight: 'bold' }}>
+              {results.totalMemoryUsedGB.toFixed(2)} GB
             </Typography>
-            <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
-              {(results.kvCachePerTokenGB * 1000).toFixed(2)} MB
-            </Typography>
-          </Box>
-          <Box>
-            <Typography variant="caption" sx={{ opacity: 0.9 }}>
-              Free Memory
-            </Typography>
-            <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
-              {results.freeMemoryForKVCacheGB.toFixed(1)} GB
+            <Typography variant="caption" sx={{ opacity: 0.8 }}>
+              {results.memoryUtilization.toFixed(1)}% of {gpu.memorySize} GB
             </Typography>
           </Box>
         </Box>
-        <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
-          <Box>
-            <Typography variant="caption" sx={{ opacity: 0.9 }}>
-              Max Tokens
-            </Typography>
-            <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
-              {formatNumber(results.maxKVCacheTokens, 0)}
-            </Typography>
-          </Box>
-          <Box>
-            <Typography variant="caption" sx={{ opacity: 0.9 }}>
-              Max Batch Size
-            </Typography>
-            <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
-              {results.maxBatchSize}
-            </Typography>
-          </Box>
+        
+        {/* Additional KV Cache Info */}
+        <Box sx={{ mt: 2, pt: 2, borderTop: '1px solid', borderColor: 'divider', opacity: 0.8 }}>
+          <Typography variant="caption" sx={{ display: 'block', mb: 0.5 }}>
+            KV Cache Details: {(results.kvCachePerTokenGB * 1000).toFixed(2)} MB per token • 
+            Free memory: {results.freeMemoryForKVCacheGB.toFixed(1)} GB • 
+            Max batch size: {results.maxBatchSize}
+          </Typography>
         </Box>
       </Paper>
 
       {/* Bottleneck Analysis */}
-      <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
-        <Paper sx={{ p: 2, backgroundColor: 'primary.light', color: 'primary.contrastText' }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-            <SpeedIcon sx={{ fontSize: 18 }} />
-            <Typography variant="subtitle2" sx={{ fontWeight: 'bold' }}>
-              Ops:Byte Ratio
-            </Typography>
-          </Box>
-          <Typography variant="h5" sx={{ fontWeight: 'bold', mb: 0.5 }}>
-            {formatNumber(results.opsToByteRatio)}
-          </Typography>
-          <Typography variant="caption" sx={{ opacity: 0.9 }}>
-            Hardware capability
-          </Typography>
-        </Paper>
-
-        <Paper sx={{ p: 2, backgroundColor: 'secondary.light', color: 'secondary.contrastText' }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-            <BoltIcon sx={{ fontSize: 18 }} />
-            <Typography variant="subtitle2" sx={{ fontWeight: 'bold' }}>
-              Arithmetic Intensity
-            </Typography>
-          </Box>
-          <Typography variant="h5" sx={{ fontWeight: 'bold', mb: 0.5 }}>
-            {formatNumber(results.arithmeticIntensity)}
-          </Typography>
-          <Typography variant="caption" sx={{ opacity: 0.9 }}>
-            Model requirement
-          </Typography>
-        </Paper>
-      </Box>
-
-            {/* Bottleneck Result */}
       <Alert 
         severity={results.isMemoryBound ? 'warning' : 'success'} 
         icon={results.isMemoryBound ? <WarningIcon /> : <CheckCircleIcon />}
         sx={{ p: 2 }}
       >
         <Typography variant="h6" sx={{ mb: 1 }}>
-          {results.isMemoryBound ? 'Memory Bound' : 'Compute Bound'}
+          Performance Bottleneck: {results.isMemoryBound ? 'Memory Bound' : 'Compute Bound'}
         </Typography>
         
-        <Typography variant="body2" sx={{ mb: 1 }}>
-          Arithmetic intensity ({results.arithmeticIntensity.toFixed(1)}) vs Ops:Byte ratio ({results.opsToByteRatio.toFixed(1)})
-        </Typography>
+        <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2, mb: 1 }}>
+          <Box>
+            <Typography variant="caption" sx={{ opacity: 0.8 }}>Hardware Capability</Typography>
+            <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
+              Ops:Byte Ratio: {formatNumber(results.opsToByteRatio)}
+            </Typography>
+          </Box>
+          <Box>
+            <Typography variant="caption" sx={{ opacity: 0.8 }}>Model Requirement</Typography>
+            <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
+              Arithmetic Intensity: {formatNumber(results.arithmeticIntensity)}
+            </Typography>
+          </Box>
+        </Box>
         
         <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
           {results.isMemoryBound ? (
-            <>Tip: Increase batch size or use higher memory bandwidth GPU</>
+            <>💡 Tip: Increase batch size or use higher memory bandwidth GPU</>
           ) : (
-            <>Tip: Upgrade compute power or use optimization techniques</>
+            <>💡 Tip: Upgrade compute power or use optimization techniques</>
           )}
         </Typography>
       </Alert>
 
-      {/* Divider */}
-      <Divider sx={{ my: 2 }} />
+      {/* Performance Metrics */}
+      <Paper sx={{ p: 2 }}>
+        <Typography variant="h6" sx={{ mb: 2, fontWeight: 'bold' }}>
+          Performance Estimates
+        </Typography>
+        
+        <Box sx={{ 
+          display: 'grid', 
+          gridTemplateColumns: { xs: '1fr 1fr', lg: '1fr 1fr 1fr 1fr' }, 
+          gap: 2,
+          mb: 2
+        }}>
+          <Box sx={{ textAlign: 'center' }}>
+            <ClockIcon sx={{ fontSize: 16, color: 'text.secondary', mb: 0.5 }} />
+            <Typography variant="caption" sx={{ display: 'block', mb: 0.5 }}>
+              Time to First Token
+            </Typography>
+            <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
+              {formatTime(results.prefillTime)}
+            </Typography>
+          </Box>
 
-      {/* Performance Estimation Notice */}
-      <Alert severity="info" sx={{ p: 2 }}>
-        <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1 }}>
-          <Box>
-            <Typography variant="subtitle2" sx={{ fontWeight: 'bold', mb: 0.5 }}>
-              Performance Estimation Notice
+          <Box sx={{ textAlign: 'center' }}>
+            <BoltIcon sx={{ fontSize: 16, color: 'text.secondary', mb: 0.5 }} />
+            <Typography variant="caption" sx={{ display: 'block', mb: 0.5 }}>
+              Inter Token Latency
             </Typography>
-            <Typography variant="body2" sx={{ mb: 1 }}>
-              These performance numbers below are <strong>theoretical estimates</strong> based on the following assumptions:
+            <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
+              {formatTime(results.timePerToken)}
             </Typography>
-            <Box component="ul" sx={{ m: 0, pl: 2, '& li': { mb: 0.5 } }}>
-              <li>
-                <Typography variant="caption">
-                  <strong>Time to first token</strong> is compute-bound (limited by GPU compute bandwidth)
-                </Typography>
-              </li>
-              <li>
-                <Typography variant="caption">
-                  <strong>Inter token latency</strong> is memory-bound (limited by memory bandwidth)
-                </Typography>
-              </li>
-              <li>
-                <Typography variant="caption">
-                  <strong>Single batch inference</strong> with no additional optimizations
-                </Typography>
-              </li>
-            </Box>
-            <Typography variant="caption" sx={{ fontStyle: 'italic', opacity: 0.8 }}>
-              Real-world performance may vary significantly based on model implementation, 
-              hardware specifics, software optimizations, and workload characteristics.
+          </Box>
+
+          <Box sx={{ textAlign: 'center' }}>
+            <ClockIcon sx={{ fontSize: 16, color: 'text.secondary', mb: 0.5 }} />
+            <Typography variant="caption" sx={{ display: 'block', mb: 0.5 }}>
+              Total Time
+            </Typography>
+            <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
+              {formatTime(results.totalGenerationTime)}
+            </Typography>
+          </Box>
+
+          <Box sx={{ textAlign: 'center' }}>
+            <TrendingUpIcon sx={{ fontSize: 16, color: 'text.secondary', mb: 0.5 }} />
+            <Typography variant="caption" sx={{ display: 'block', mb: 0.5 }}>
+              Throughput
+            </Typography>
+            <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
+              {formatNumber(results.throughputTokensPerSecond, 0)} tok/s
             </Typography>
           </Box>
         </Box>
-      </Alert>
 
-      {/* Performance Metrics */}
-      <Box sx={{ 
-        display: 'grid', 
-        gridTemplateColumns: { xs: '1fr 1fr', lg: '1fr 1fr 1fr 1fr' }, 
-        gap: 2 
-      }}>
-        <Card elevation={2}>
-          <CardContent sx={{ p: 2 }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-              <ClockIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
-              <Typography variant="caption" sx={{ fontWeight: 'medium', color: 'text.primary' }}>
-                Time to First Token
-              </Typography>
-            </Box>
-            <Typography variant="h6" sx={{ fontWeight: 'bold', mb: 0.5 }}>
-              {formatTime(results.prefillTime)}
-            </Typography>
-            <Typography variant="caption" color="text.secondary">
-              initial latency
-            </Typography>
-          </CardContent>
-        </Card>
+        <Alert severity="info" sx={{ mt: 2 }}>
+          <Typography variant="caption">
+            <strong>Note:</strong> These are theoretical estimates assuming time-to-first-token is compute-bound, 
+            inter-token-latency is memory-bound, and single batch inference. 
+            Real performance may vary based on implementation and optimizations.
+          </Typography>
+        </Alert>
+      </Paper>
 
-        <Card elevation={2}>
-          <CardContent sx={{ p: 2 }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-              <BoltIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
-              <Typography variant="caption" sx={{ fontWeight: 'medium', color: 'text.primary' }}>
-                Inter Token Latency
-              </Typography>
-            </Box>
-            <Typography variant="h6" sx={{ fontWeight: 'bold', mb: 0.5 }}>
-              {formatTime(results.timePerToken)}
-            </Typography>
-            <Typography variant="caption" color="text.secondary">
-              per token
-            </Typography>
-          </CardContent>
-        </Card>
-
-        <Card elevation={2}>
-          <CardContent sx={{ p: 2 }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-              <ClockIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
-              <Typography variant="caption" sx={{ fontWeight: 'medium', color: 'text.primary' }}>
-                Total Time
-              </Typography>
-            </Box>
-            <Typography variant="h6" sx={{ fontWeight: 'bold', mb: 0.5 }}>
-              {formatTime(results.totalGenerationTime)}
-            </Typography>
-            <Typography variant="caption" color="text.secondary">
-              end-to-end
-            </Typography>
-          </CardContent>
-        </Card>
-
-        <Card elevation={2}>
-          <CardContent sx={{ p: 2 }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-              <TrendingUpIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
-              <Typography variant="caption" sx={{ fontWeight: 'medium', color: 'text.primary' }}>
-                Throughput
-              </Typography>
-            </Box>
-            <Typography variant="h6" sx={{ fontWeight: 'bold', mb: 0.5 }}>
-              {formatNumber(results.throughputTokensPerSecond, 0)}
-            </Typography>
-            <Typography variant="caption" color="text.secondary">
-              token/s
-            </Typography>
-          </CardContent>
-        </Card>
-      </Box>
     </Box>
   );
 };

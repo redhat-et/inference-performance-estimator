@@ -323,11 +323,23 @@ export function configToModelPreset(modelId: string, config: HuggingFaceConfig, 
   const sequenceLength = safeNumber(config.max_position_embeddings, 4096);
   const hiddenSize = safeNumber(config.hidden_size, 4096);
   const numAttentionHeads = safeNumber(config.num_attention_heads, 32);
+  const intermediateSize = safeNumber(config.intermediate_size, hiddenSize * 4); // Common ratio is 4x
+  const nKvHeads = safeNumber(config.num_key_value_heads, numAttentionHeads); // Default to nHeads if not specified
   
   const headDimension = hiddenSize / numAttentionHeads;
   const nLayers = safeNumber(config.num_hidden_layers, 32);
   const nHeads = numAttentionHeads;
   const defaultQuantization = getQuantizationFromTorchDtype(config);
+
+  console.log(`Loaded HF model ${modelId}:`, {
+    parameters: parameters.toFixed(2) + 'B',
+    hiddenSize,
+    intermediateSize,
+    nHeads,
+    nKvHeads,
+    nLayers,
+    headDimension: headDimension.toFixed(0)
+  });
 
   return {
     name: modelId,
@@ -336,6 +348,9 @@ export function configToModelPreset(modelId: string, config: HuggingFaceConfig, 
     headDimension,
     nLayers,
     nHeads,
+    nKvHeads,
+    hiddenSize,
+    intermediateSize,
     defaultQuantization,
   };
 }

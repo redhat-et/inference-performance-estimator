@@ -42,11 +42,16 @@ export function calculateOpsToByteRatio(gpu: GPUSpecs, model: ModelSpecs): numbe
  * arithmetic_intensity = total_compute / total_memory_movement
  */
 export function calculateArithmeticIntensity(model: ModelSpecs): number {
+  // Validate required parameters
+  if (!model.headDimension) {
+    throw new Error('Model architecture missing: headDimension is required for arithmetic intensity calculation');
+  }
+  
   // Use dimensions from model configuration
   // N = sequence length (context length for attention calculation)
   // d = attention head dimension
   const N = model.sequenceLength; // Use the sequence length as N in the equation
-  const d = model.headDimension || 128; // Default to Llama 2 7B if not specified
+  const d = model.headDimension;
   
   // From Baseten's detailed attention breakdown:
   // Memory movement in bytes (accounting for quantization):
@@ -138,22 +143,68 @@ export function determineBottleneck(opsToByteRatio: number, arithmeticIntensity:
 
 /**
  * Calculate KV cache memory usage per token
- * Using formula: kv_cache_size = 2 * n_layers * d_model * bytes_per_param (for key + value)
- * where d_model = d_head * n_heads
+ * Using formula from HBM Calculator: 2 * n_layers * n_kv_heads * head_dims * bytes_per_param
+ * More accurate for grouped-query attention models
  */
 function calculateKVCachePerToken(model: ModelSpecs): number {
-  // Use hardcoded model architecture parameters
-  const nLayers = model.nLayers || 32; // Default to Llama 2 7B if not specified
-  const dHead = model.headDimension || 128; // Default to Llama 2 7B if not specified
-  const nHeads = model.nHeads || 32; // Default to Llama 2 7B if not specified
-  const dModel = dHead * nHeads; // Calculate d_model from d_head * n_heads
+  // Validate all required parameters are present
+  if (!model.nLayers) {
+    throw new Error('Model architecture missing: nLayers is required for KV cache calculation');
+  }
+  if (!model.headDimension) {
+    throw new Error('Model architecture missing: headDimension is required for KV cache calculation');
+  }
+  if (!model.nKvHeads && !model.nHeads) {
+    throw new Error('Model architecture missing: nKvHeads or nHeads is required for KV cache calculation');
+  }
+
+  const nLayers = model.nLayers;
+  const dHead = model.headDimension;
+  const nKvHeads = model.nKvHeads || model.nHeads; // nKvHeads takes priority, fallback to nHeads
   const quantInfo = getQuantizationInfo(model.quantization);
   
   // KV cache stores both key and value for each layer, for each token
-  // Formula: 2 * n_layers * d_model * bytes_per_param (key + value)
-  const kvCacheBytesPerToken = 2 * nLayers * dModel * quantInfo.bytesPerParameter;
+  // Formula from HBM Calculator: 2 * n_layers * n_kv_heads * head_dims * bytes_per_param (key + value)
+  const kvCacheBytesPerToken = 2 * nLayers * nKvHeads * dHead * quantInfo.bytesPerParameter;
   
-  return kvCacheBytesPerToken / 1e9; // Convert to GB
+  return kvCacheBytesPerToken / (1000 ** 3); // Convert to GB using same factor as notebook
+}
+
+/**
+ * Calculate PyTorch activation memory usage
+ * Using formula from HBM Calculator: max_num_sequences * sequence_length * (18 * hidden_size + 4 * intermediate_size)
+ * This accounts for intermediate calculations during forward pass
+ */
+function calculateActivationMemory(model: ModelSpecs): number {
+  // Validate required architecture parameters are present
+  if (!model.hiddenSize) {
+    throw new Error('Model architecture missing: hiddenSize is required for activation memory calculation');
+  }
+  if (!model.intermediateSize) {
+    throw new Error('Model architecture missing: intermediateSize is required for activation memory calculation');
+  }
+
+  const hiddenSize = model.hiddenSize;
+  const intermediateSize = model.intermediateSize;
+  const sequenceLength = model.promptTokens + model.outputTokens;
+  const maxNumSequences = model.batchSize;
+  
+  console.log(`Using real HF architecture: hiddenSize=${hiddenSize}, intermediateSize=${intermediateSize}`);
+  
+  // PyTorch activation memory scales with batch size and sequence length
+  // Formula from HBM Calculator: max_num_sequences * sequence_length * (18 * hidden_size + 4 * intermediate_size)
+  // Note: No data type multiplier needed - the coefficients (18, 4) already account for byte size
+  const activationMemoryBytes = maxNumSequences * sequenceLength * (18 * hiddenSize + 4 * intermediateSize);
+  
+  return activationMemoryBytes / (1000 ** 3); // Convert to GB using same factor as notebook
+}
+
+/**
+ * Calculate fixed system overhead memory
+ * Based on HBM Calculator: Fixed 1GB for CUDA kernels, runtime, etc.
+ */
+function calculateSystemOverhead(): number {
+  return 1.0; // Fixed 1GB overhead
 }
 
 /**
@@ -161,6 +212,8 @@ function calculateKVCachePerToken(model: ModelSpecs): number {
  */
 function checkMemoryFit(gpu: GPUSpecs, model: ModelSpecs): {
   modelSizeGB: number;
+  systemOverheadGB: number;
+  activationMemoryGB: number;
   memoryUtilization: number;
   hasMemoryWarning: boolean;
   memoryWarningMessage?: string;
@@ -172,18 +225,21 @@ function checkMemoryFit(gpu: GPUSpecs, model: ModelSpecs): {
   currentKVCacheGB: number;
 } {
   const modelSizeBytes = calculateModelSizeBytes(model);
-  const modelSizeGB = modelSizeBytes / (1e9); // Convert to GB
+  const modelSizeGB = modelSizeBytes / (1000 ** 3); // Convert to GB using same factor as notebook
   const gpuMemoryGB = gpu.memorySize;
   
-  const totalMemoryNeeded = modelSizeGB;
-  
-  // Calculate KV cache memory usage using proper formula
+  // Calculate all memory components following HBM Calculator approach
+  const systemOverheadGB = calculateSystemOverhead(); // Fixed 1GB
+  const activationMemoryGB = calculateActivationMemory(model); // Dynamic based on batch/sequence
   const kvCachePerTokenGB = calculateKVCachePerToken(model);
   const currentKVCacheGB = kvCachePerTokenGB * model.sequenceLength * model.batchSize;
-  const totalMemoryWithKV = totalMemoryNeeded + currentKVCacheGB;
   
-  // Calculate free memory available for KV cache
-  const freeMemoryForKVCacheGB = Math.max(0, gpuMemoryGB - totalMemoryNeeded);
+  // Total memory needed = model weights + system overhead + activation memory + KV cache
+  const totalMemoryNeeded = modelSizeGB + systemOverheadGB + activationMemoryGB + currentKVCacheGB;
+  
+  // Calculate free memory available for additional KV cache
+  const baseMemoryUsage = modelSizeGB + systemOverheadGB + activationMemoryGB;
+  const freeMemoryForKVCacheGB = Math.max(0, gpuMemoryGB - baseMemoryUsage);
   
   // Calculate maximum tokens that can fit in KV cache
   const maxKVCacheTokens = kvCachePerTokenGB > 0 ? Math.floor(freeMemoryForKVCacheGB / kvCachePerTokenGB) : 0;
@@ -191,15 +247,15 @@ function checkMemoryFit(gpu: GPUSpecs, model: ModelSpecs): {
   // Calculate maximum batch size based on available memory
   const maxBatchSize = model.sequenceLength > 0 ? Math.floor(maxKVCacheTokens / model.sequenceLength) : 0;
   
-  const memoryUtilization = (totalMemoryWithKV / gpuMemoryGB) * 100;
+  const memoryUtilization = (totalMemoryNeeded / gpuMemoryGB) * 100;
   
   let hasMemoryWarning = false;
   let memoryWarningMessage: string | undefined;
   
-  if (totalMemoryWithKV > gpuMemoryGB) {
+  if (totalMemoryNeeded > gpuMemoryGB) {
     hasMemoryWarning = true;
-    const shortfall = totalMemoryWithKV - gpuMemoryGB;
-    memoryWarningMessage = `Model requires ${totalMemoryWithKV.toFixed(1)}GB but GPU only has ${gpuMemoryGB}GB. Shortfall: ${shortfall.toFixed(1)}GB. Consider using a smaller model, better quantization, or a GPU with more memory.`;
+    const shortfall = totalMemoryNeeded - gpuMemoryGB;
+    memoryWarningMessage = `Model requires ${totalMemoryNeeded.toFixed(1)}GB but GPU only has ${gpuMemoryGB}GB. Shortfall: ${shortfall.toFixed(1)}GB. Consider using a smaller model, better quantization, or a GPU with more memory.`;
   } else if (memoryUtilization > 90) {
     hasMemoryWarning = true;
     memoryWarningMessage = `High memory usage (${memoryUtilization.toFixed(1)}%). May cause performance issues or OOM errors. Consider reducing batch size or sequence length.`;
@@ -208,10 +264,10 @@ function checkMemoryFit(gpu: GPUSpecs, model: ModelSpecs): {
     memoryWarningMessage = `Moderate memory usage (${memoryUtilization.toFixed(1)}%). Monitor for potential memory pressure.`;
   }
   
-  const totalMemoryUsedGB = (memoryUtilization / 100) * gpuMemoryGB;
-
   return {
     modelSizeGB,
+    systemOverheadGB,
+    activationMemoryGB,
     memoryUtilization: Math.min(memoryUtilization, 999), // Cap at 999% for display
     hasMemoryWarning,
     memoryWarningMessage,
@@ -219,7 +275,7 @@ function checkMemoryFit(gpu: GPUSpecs, model: ModelSpecs): {
     freeMemoryForKVCacheGB,
     maxKVCacheTokens,
     maxBatchSize,
-    totalMemoryUsedGB,
+    totalMemoryUsedGB: totalMemoryNeeded,
     currentKVCacheGB,
   };
 }
@@ -249,32 +305,38 @@ function checkPerformanceWarning(throughput: number): {
  * Main calculation function that computes all performance metrics
  */
 export function calculatePerformance(gpu: GPUSpecs, model: ModelSpecs, systemOverhead?: SystemOverhead): CalculationResults {
-  const opsToByteRatio = calculateOpsToByteRatio(gpu, model);
-  const arithmeticIntensity = calculateArithmeticIntensity(model);
-  const bottleneck = determineBottleneck(opsToByteRatio, arithmeticIntensity);
-  const memoryCheck = checkMemoryFit(gpu, model);
-  
-  const prefillTime = calculatePrefillTime(gpu, model, systemOverhead);
-  const timePerToken = calculateTimePerToken(gpu, model, systemOverhead);
-  const totalGenerationTime = calculateTotalGenerationTime(
-    prefillTime,
-    timePerToken,
-    model.outputTokens
-  );
-  
-  const totalTokens = model.promptTokens + model.outputTokens;
-  const throughputTokensPerSecond = calculateThroughput(totalGenerationTime, totalTokens);
-  const performanceCheck = checkPerformanceWarning(throughputTokensPerSecond);
-  
-  return {
-    opsToByteRatio,
-    arithmeticIntensity,
-    ...bottleneck,
-    prefillTime,
-    timePerToken,
-    totalGenerationTime,
-    throughputTokensPerSecond,
-    ...memoryCheck,
-    ...performanceCheck,
-  };
+  try {
+    const opsToByteRatio = calculateOpsToByteRatio(gpu, model);
+    const arithmeticIntensity = calculateArithmeticIntensity(model);
+    const bottleneck = determineBottleneck(opsToByteRatio, arithmeticIntensity);
+    const memoryCheck = checkMemoryFit(gpu, model);
+    
+    const prefillTime = calculatePrefillTime(gpu, model, systemOverhead);
+    const timePerToken = calculateTimePerToken(gpu, model, systemOverhead);
+    const totalGenerationTime = calculateTotalGenerationTime(
+      prefillTime,
+      timePerToken,
+      model.outputTokens
+    );
+    
+    const totalTokens = model.promptTokens + model.outputTokens;
+    const throughputTokensPerSecond = calculateThroughput(totalGenerationTime, totalTokens);
+    const performanceCheck = checkPerformanceWarning(throughputTokensPerSecond);
+    
+    return {
+      opsToByteRatio,
+      arithmeticIntensity,
+      ...bottleneck,
+      prefillTime,
+      timePerToken,
+      totalGenerationTime,
+      throughputTokensPerSecond,
+      ...memoryCheck,
+      ...performanceCheck,
+    };
+  } catch (error) {
+    // Re-throw the error with context about where it occurred
+    const errorMessage = error instanceof Error ? error.message : 'Unknown calculation error';
+    throw new Error(`Performance calculation failed: ${errorMessage}`);
+  }
 }
