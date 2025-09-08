@@ -159,6 +159,14 @@ export const GPUSelector: React.FC<GPUSelectorProps> = ({ selectedGPU, onGPUChan
                 {selectedGPU.memorySize} GB
               </Typography>
             </Box>
+            {selectedGPU.price && (
+              <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                <Typography variant="caption">Price:</Typography>
+                <Typography variant="caption" sx={{ fontFamily: 'monospace', fontWeight: 'bold' }}>
+                  ${selectedGPU.price}
+                </Typography>
+              </Box>
+            )}
           </Box>
         </Paper>
       )}
