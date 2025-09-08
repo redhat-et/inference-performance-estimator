@@ -168,8 +168,8 @@ export const ComparisonChart: React.FC<ComparisonChartProps> = ({ availableModel
               />
               <Tooltip content={<CustomTooltip />} />
               <Legend fontSize={11} />
-              <Bar dataKey="prefillTime" fill="#3B82F6" name="Prefill" />
-              <Bar dataKey="timePerToken" fill="#10B981" name="Decode" />
+              <Bar dataKey="prefillTime" fill="#3B82F6" name="Time to First Token" />
+              <Bar dataKey="timePerToken" fill="#10B981" name="Inter Token Latency" />
             </BarChart>
           </ResponsiveContainer>
         );
@@ -384,7 +384,7 @@ export const ComparisonChart: React.FC<ComparisonChartProps> = ({ availableModel
               Performance Times:
             </Typography>
             <Typography variant="body2">
-              Compare prefill and generation times. Lower is better.
+              Compare time to first token and inter token latency. Lower is better.
             </Typography>
           </>
         )}

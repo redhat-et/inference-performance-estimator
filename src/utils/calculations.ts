@@ -71,11 +71,11 @@ export function calculateArithmeticIntensity(model: ModelSpecs): number {
 }
 
 /**
- * Calculate time for prefill phase (processing input tokens)
- * Assumes compute-bound operation during prefill
+ * Calculate time to first token (processing input tokens before generation begins)
+ * Assumes compute-bound operation for initial processing
  */
 export function calculatePrefillTime(gpu: GPUSpecs, model: ModelSpecs, systemOverhead?: SystemOverhead): number {
-  // Prefill time = number of tokens * (number of parameters * 2 FLOP) / compute bandwidth
+  // Time to first token = number of tokens * (number of parameters * 2 FLOP) / compute bandwidth
   // Factor of 2 accounts for forward pass operations
   // Quantization affects compute performance
   const quantInfo = getQuantizationInfo(model.quantization);
@@ -83,25 +83,25 @@ export function calculatePrefillTime(gpu: GPUSpecs, model: ModelSpecs, systemOve
   const effectiveComputeFlops = gpu.computeBandwidth * 1e12 * quantInfo.computeMultiplier;
   
   const baseTime = (totalFlops / effectiveComputeFlops) * 1000; // Convert to milliseconds
-  const prefillEfficiency = (systemOverhead?.prefillEfficiencyPercent ?? 100) / 100; // Convert percentage to multiplier
+  const systemEfficiency = (systemOverhead?.systemEfficiencyPercent ?? 100) / 100; // Convert percentage to multiplier
   
-  return baseTime / prefillEfficiency; // Lower efficiency = higher time
+  return baseTime / systemEfficiency; // Lower efficiency = higher time
 }
 
 /**
- * Calculate time per token during generation phase
+ * Calculate inter token latency during generation phase
  * Assumes memory-bound operation for single token generation
  */
 export function calculateTimePerToken(gpu: GPUSpecs, model: ModelSpecs, systemOverhead?: SystemOverhead): number {
-  // Time per token = model size in bytes / memory bandwidth
+  // Inter token latency = model size in bytes / memory bandwidth
   // Model size depends on quantization
   const modelSizeBytes = calculateModelSizeBytes(model);
   const memoryBytesPerSecond = gpu.memoryBandwidth * 1e9;
   
   const baseTime = (modelSizeBytes / memoryBytesPerSecond) * 1000; // Convert to milliseconds
-  const decodeEfficiency = (systemOverhead?.decodeEfficiencyPercent ?? 100) / 100; // Convert percentage to multiplier
+  const systemEfficiency = (systemOverhead?.systemEfficiencyPercent ?? 100) / 100; // Convert percentage to multiplier
   
-  return baseTime / decodeEfficiency; // Lower efficiency = higher time
+  return baseTime / systemEfficiency; // Lower efficiency = higher time
 }
 
 /**

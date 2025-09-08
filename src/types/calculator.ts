@@ -30,8 +30,7 @@ export interface ModelSpecs {
 }
 
 export interface SystemOverhead {
-  prefillEfficiencyPercent: number; // efficiency for prefill time calculations in percentage (default: 100)
-  decodeEfficiencyPercent: number; // efficiency for decode/time-per-token calculations in percentage (default: 100)
+  systemEfficiencyPercent: number; // overall system efficiency in percentage (default: 100)
 }
 
 export type QuantizationType = 'FP32' | 'FP16' | 'INT8' | 'INT4';
@@ -48,8 +47,8 @@ export interface CalculationResults {
   arithmeticIntensity: number;
   isMemoryBound: boolean;
   isComputeBound: boolean;
-  prefillTime: number; // ms
-  timePerToken: number; // ms
+  prefillTime: number; // ms - time to first token
+  timePerToken: number; // ms - inter token latency
   totalGenerationTime: number; // ms
   throughputTokensPerSecond: number;
   modelSizeGB: number; // Model size in GB
@@ -107,6 +106,5 @@ export const DEFAULT_INFERENCE_PARAMS = {
 };
 
 export const DEFAULT_SYSTEM_OVERHEAD: SystemOverhead = {
-  prefillEfficiencyPercent: 80, // default efficiency for prefill time calculations
-  decodeEfficiencyPercent: 80, // default efficiency for decode time calculations
+  systemEfficiencyPercent: 80, // default overall system efficiency
 };

@@ -259,7 +259,7 @@ export const ModelInputs: React.FC<ModelInputsProps> = ({ modelSpecs, onModelCha
           placeholder="350"
           inputProps={{ min: 1, step: 1 }}
         />
-        <Tooltip title="Input tokens (prefill)" placement="top">
+        <Tooltip title="Input tokens (prompt processing)" placement="top">
           <IconButton size="small">
             <InfoIcon fontSize="small" />
           </IconButton>

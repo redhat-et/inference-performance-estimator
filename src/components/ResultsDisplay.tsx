@@ -215,12 +215,12 @@ export const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ gpu, results }) 
             <Box component="ul" sx={{ m: 0, pl: 2, '& li': { mb: 0.5 } }}>
               <li>
                 <Typography variant="caption">
-                  <strong>Prefill phase</strong> is compute-bound (limited by GPU compute bandwidth)
+                  <strong>Time to first token</strong> is compute-bound (limited by GPU compute bandwidth)
                 </Typography>
               </li>
               <li>
                 <Typography variant="caption">
-                  <strong>Decode phase</strong> is memory-bound (limited by memory bandwidth)
+                  <strong>Inter token latency</strong> is memory-bound (limited by memory bandwidth)
                 </Typography>
               </li>
               <li>
@@ -248,14 +248,14 @@ export const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ gpu, results }) 
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
               <ClockIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
               <Typography variant="caption" sx={{ fontWeight: 'medium', color: 'text.primary' }}>
-                Prefill
+                Time to First Token
               </Typography>
             </Box>
             <Typography variant="h6" sx={{ fontWeight: 'bold', mb: 0.5 }}>
               {formatTime(results.prefillTime)}
             </Typography>
             <Typography variant="caption" color="text.secondary">
-              total
+              initial latency
             </Typography>
           </CardContent>
         </Card>
@@ -265,7 +265,7 @@ export const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ gpu, results }) 
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
               <BoltIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
               <Typography variant="caption" sx={{ fontWeight: 'medium', color: 'text.primary' }}>
-                Decode
+                Inter Token Latency
               </Typography>
             </Box>
             <Typography variant="h6" sx={{ fontWeight: 'bold', mb: 0.5 }}>
