@@ -38,7 +38,7 @@ export const ModelInputs: React.FC<ModelInputsProps> = ({ modelSpecs, onModelCha
     setCurrentModelPreset(model);
     onModelChange({ 
       parameters: model.parameters,
-      sequenceLength: model.sequenceLength,
+      sequenceLength: model.sequenceLength, // Keep for arithmetic intensity (max context)
       headDimension: model.headDimension,
       nLayers: model.nLayers,
       nHeads: model.nHeads,
@@ -165,19 +165,22 @@ export const ModelInputs: React.FC<ModelInputsProps> = ({ modelSpecs, onModelCha
         </Tooltip>
       </Box>
 
-                {/* Context Length */}
+                {/* Sequence Length - Calculated automatically */}
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
             <TextField
-              label="Context Length (N)"
+              label="Sequence Length (Calculated)"
               type="number"
-              value={modelSpecs.sequenceLength}
-              onChange={(e) => handleInputChange('sequenceLength', parseInt(e.target.value) || 0)}
+              value={modelSpecs.promptTokens + modelSpecs.outputTokens}
+              disabled
               size="small"
               fullWidth
-              placeholder="4096"
-              inputProps={{ min: 1, step: 1 }}
+              sx={{ 
+                '& .MuiInputBase-input.Mui-disabled': {
+                  WebkitTextFillColor: 'rgba(0, 0, 0, 0.6)',
+                }
+              }}
             />
-            <Tooltip title="N - context window size used in attention equation (4096 for Llama 2 7B)" placement="top">
+            <Tooltip title="Automatically calculated as Prompt Tokens + Output Tokens. This is the sequence length used in all calculations." placement="top">
               <IconButton size="small">
                 <InfoIcon fontSize="small" />
               </IconButton>
@@ -321,7 +324,7 @@ export const ModelInputs: React.FC<ModelInputsProps> = ({ modelSpecs, onModelCha
             Batch size: {modelSpecs.batchSize}
           </Typography>
           <Typography variant="caption">
-            Attention dimensions: N={modelSpecs.sequenceLength}, d={modelSpecs.headDimension || 128}
+            Attention dimensions: N={modelSpecs.promptTokens + modelSpecs.outputTokens}, d={modelSpecs.headDimension || 128}
           </Typography>
           <Typography variant="caption">
             Architecture: {modelSpecs.nLayers || 32} layers, {modelSpecs.nHeads || 32} heads, d_model={(modelSpecs.headDimension || 128) * (modelSpecs.nHeads || 32)}

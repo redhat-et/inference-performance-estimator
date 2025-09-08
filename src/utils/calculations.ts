@@ -189,14 +189,13 @@ function calculateActivationMemory(model: ModelSpecs): number {
   const sequenceLength = model.promptTokens + model.outputTokens;
   const maxNumSequences = model.batchSize;
   
-  console.log(`Using real HF architecture: hiddenSize=${hiddenSize}, intermediateSize=${intermediateSize}`);
-  
   // PyTorch activation memory scales with batch size and sequence length
   // Formula from HBM Calculator: max_num_sequences * sequence_length * (18 * hidden_size + 4 * intermediate_size)
-  // Note: No data type multiplier needed - the coefficients (18, 4) already account for byte size
+  // Note: coefficients (18, 4) are already in bytes, no need for data type scaling
   const activationMemoryBytes = maxNumSequences * sequenceLength * (18 * hiddenSize + 4 * intermediateSize);
+  const activationMemoryGB = activationMemoryBytes / (1000 ** 3);
   
-  return activationMemoryBytes / (1000 ** 3); // Convert to GB using same factor as notebook
+  return activationMemoryGB;
 }
 
 /**
@@ -232,7 +231,7 @@ function checkMemoryFit(gpu: GPUSpecs, model: ModelSpecs): {
   const systemOverheadGB = calculateSystemOverhead(); // Fixed 1GB
   const activationMemoryGB = calculateActivationMemory(model); // Dynamic based on batch/sequence
   const kvCachePerTokenGB = calculateKVCachePerToken(model);
-  const currentKVCacheGB = kvCachePerTokenGB * model.sequenceLength * model.batchSize;
+  const currentKVCacheGB = kvCachePerTokenGB * (model.promptTokens + model.outputTokens) * model.batchSize;
   
   // Total memory needed = model weights + system overhead + activation memory + KV cache
   const totalMemoryNeeded = modelSizeGB + systemOverheadGB + activationMemoryGB + currentKVCacheGB;
@@ -245,7 +244,8 @@ function checkMemoryFit(gpu: GPUSpecs, model: ModelSpecs): {
   const maxKVCacheTokens = kvCachePerTokenGB > 0 ? Math.floor(freeMemoryForKVCacheGB / kvCachePerTokenGB) : 0;
   
   // Calculate maximum batch size based on available memory
-  const maxBatchSize = model.sequenceLength > 0 ? Math.floor(maxKVCacheTokens / model.sequenceLength) : 0;
+  const actualSequenceLength = model.promptTokens + model.outputTokens;
+  const maxBatchSize = actualSequenceLength > 0 ? Math.floor(maxKVCacheTokens / actualSequenceLength) : 0;
   
   const memoryUtilization = (totalMemoryNeeded / gpuMemoryGB) * 100;
   
