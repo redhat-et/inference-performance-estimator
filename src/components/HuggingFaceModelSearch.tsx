@@ -41,6 +41,7 @@ export const HuggingFaceModelSearch: React.FC<HuggingFaceModelSearchProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [selectedModel, setSelectedModel] = useState<string>('');
   const [error, setError] = useState<string>('');
+  const [accessToken, setAccessToken] = useState<string>('');
 
   // Memoized suggested models for autocomplete
   const suggestedModelsOptions = useMemo(() => SUGGESTED_MODELS.map(model => ({
@@ -78,7 +79,7 @@ export const HuggingFaceModelSearch: React.FC<HuggingFaceModelSearchProps> = ({
     setError('');
 
     try {
-      const model = await loadModelFromHub(modelId);
+      const model = await loadModelFromHub(modelId, accessToken || undefined);
       // Add HF Hub metadata
       const enhancedModel: ModelPreset = {
         ...model,
@@ -258,6 +259,20 @@ export const HuggingFaceModelSearch: React.FC<HuggingFaceModelSearchProps> = ({
       <Typography variant="caption" color="text.secondary" sx={{ mt: 1 }}>
         Select or click any model to automatically load its configuration from Hugging Face Hub.
       </Typography>
+
+      {/* Access Token Input */}
+      <Box sx={{ mt: 3, pt: 2, borderTop: 1, borderColor: 'divider' }}>
+        <TextField
+          label="Access Token (Optional)"
+          placeholder="For private/gated models..."
+          type="password"
+          value={accessToken}
+          onChange={(e) => setAccessToken(e.target.value)}
+          size="small"
+          fullWidth
+          helperText="Required for private or gated models. Get your token from huggingface.co/settings/tokens"
+        />
+      </Box>
     </Box>
   );
 };

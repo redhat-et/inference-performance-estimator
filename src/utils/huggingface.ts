@@ -96,13 +96,14 @@ export async function searchModels(
 /**
  * Load model configuration from Hugging Face Hub
  */
-export async function loadModelConfig(modelId: string): Promise<HuggingFaceConfig> {
+export async function loadModelConfig(modelId: string, token?: string): Promise<HuggingFaceConfig> {
   try {
     // Direct URL to the config.json file on Hugging Face Hub
     const response = await downloadFile({
       repo: modelId,
       path: "config.json",
       raw: true,
+      ...(token && { accessToken: token })
     })
     if (!response) {
       throw new Error(`Failed to fetch config for ${modelId}`);
@@ -118,13 +119,33 @@ export async function loadModelConfig(modelId: string): Promise<HuggingFaceConfi
 /**
  * Load model.safetensors.index.json which contains parameter count
  */
-export async function loadSafetensorsIndex(modelId: string): Promise<any> {
+interface SafetensorsIndex {
+  metadata?: {
+    total_size?: string;
+    num_params?: number;
+    total_params?: number;
+    parameters?: number;
+  };
+  safetensors?: {
+    parameters?: number;
+  };
+  pytorch_model?: {
+    parameters?: number;
+  };
+  transformersInfo?: {
+    parameters?: number;
+  };
+  [key: string]: unknown;
+}
+
+export async function loadSafetensorsIndex(modelId: string, token?: string): Promise<SafetensorsIndex | null> {
   try {
     // Direct URL to the config.json file on Hugging Face Hub
     const response = await downloadFile({
       repo: modelId,
       path: "model.safetensors.index.json",
       raw: true,
+      ...(token && { accessToken: token })
     })
     if (!response) {
       throw new Error(`Failed to fetch index for ${modelId}`);
@@ -140,9 +161,15 @@ export async function loadSafetensorsIndex(modelId: string): Promise<any> {
 /**
  * Load additional model information from Hugging Face Hub API
  */
-export async function loadModelInfo(modelId: string): Promise<any> {
+export async function loadModelInfo(modelId: string, token?: string): Promise<ModelInfo | null> {
   try {
-    const response = await fetch(`https://huggingface.co/api/models/${modelId}`);
+    const response = await fetch(`https://huggingface.co/api/models/${modelId}`, {
+      ...(token && {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      })
+    });
     
     if (!response.ok) {
       // Don't throw error for API info, just return null
@@ -358,13 +385,13 @@ export function configToModelPreset(modelId: string, config: HuggingFaceConfig, 
 /**
  * Load a model preset from Hugging Face Hub
  */
-export async function loadModelFromHub(modelId: string): Promise<ModelPreset> {
+export async function loadModelFromHub(modelId: string, token?: string): Promise<ModelPreset> {
   try {
     // Load config, safetensors index, and model info in parallel
     const [config, safetensorsIndex, modelInfo] = await Promise.all([
-      loadModelConfig(modelId),
-      loadSafetensorsIndex(modelId),
-      loadModelInfo(modelId)
+      loadModelConfig(modelId, token),
+      loadSafetensorsIndex(modelId, token),
+      loadModelInfo(modelId, token)
     ]);
     
     return configToModelPreset(modelId, config, safetensorsIndex, modelInfo);
