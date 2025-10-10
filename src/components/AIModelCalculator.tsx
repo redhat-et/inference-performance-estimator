@@ -19,6 +19,7 @@ import {
   BarChart as BarChartIcon,
   Tune as TuneIcon,
   Error as ErrorIcon,
+  TableChart as TableChartIcon,
 } from '@mui/icons-material';
 import type { GPUSpecs, ModelSpecs, CalculationResults, SystemOverhead } from '../types/calculator';
 import { DEFAULT_SYSTEM_OVERHEAD } from '../types/calculator';
@@ -29,6 +30,7 @@ import { ModelInputs } from './ModelInputs';
 import { SystemOverheadInputs } from './SystemOverheadInputs';
 import { ResultsDisplay } from './ResultsDisplay';
 import { ComparisonChart } from './ComparisonChart';
+import { DeviceModelMatrix } from './DeviceModelMatrix';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -148,6 +150,12 @@ export const AIModelCalculator: React.FC = () => {
             <Tab 
               label="Comparison" 
               icon={<BarChartIcon />} 
+              iconPosition="start"
+              sx={{ minHeight: 64, textTransform: 'none', fontSize: '1rem' }}
+            />
+            <Tab 
+              label="Stack Finder" 
+              icon={<TableChartIcon />} 
               iconPosition="start"
               sx={{ minHeight: 64, textTransform: 'none', fontSize: '1rem' }}
             />
@@ -339,6 +347,11 @@ export const AIModelCalculator: React.FC = () => {
           )}
         </CardContent>
       </Card>
+        </TabPanel>
+
+        {/* Stack Finder Tab */}
+        <TabPanel value={tabValue} index={2}>
+          <DeviceModelMatrix availableGPUs={gpus} />
         </TabPanel>
 
         {/* Footer */}

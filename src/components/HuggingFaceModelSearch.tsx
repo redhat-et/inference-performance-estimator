@@ -61,7 +61,6 @@ export const HuggingFaceModelSearch: React.FC<HuggingFaceModelSearchProps> = ({
     try {
       const results = await searchModels(query, {
         limit: 10,
-        filter: 'text-generation'
       });
 
       setSearchResults(results.models || []);
