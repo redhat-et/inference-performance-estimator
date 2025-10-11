@@ -238,7 +238,7 @@ export const DeviceModelMatrix: React.FC<DeviceModelMatrixProps> = ({ availableG
             // Collect model-specific values regardless of device compatibility
             alpacaEvalValues.push(model.alpacaEvalScore);
             contextLengthValues.push(model.specs.sequenceLength);
-          } catch (error) {
+          } catch {
             // Skip failed calculations but still collect model data
             alpacaEvalValues.push(model.alpacaEvalScore);
             contextLengthValues.push(model.specs.sequenceLength);
