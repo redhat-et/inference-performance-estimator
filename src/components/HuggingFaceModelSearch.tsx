@@ -85,7 +85,7 @@ export const HuggingFaceModelSearch: React.FC<HuggingFaceModelSearchProps> = ({
         isFromHub: true,
         hubUrl: `https://huggingface.co/${modelId}`
       };
-      
+
       onModelLoad(enhancedModel);
       setSelectedModel(modelId);
     } catch (err) {
@@ -95,12 +95,12 @@ export const HuggingFaceModelSearch: React.FC<HuggingFaceModelSearchProps> = ({
     } finally {
       setIsLoading(false);
     }
-  }, [onModelLoad, onError]);
+  }, [onModelLoad, onError, accessToken]);
 
   const handleSearchInputChange = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
     const query = event.target.value;
     setSearchQuery(query);
-    
+
     // Debounced search
     const timeoutId = setTimeout(() => {
       handleSearch(query);
@@ -189,10 +189,10 @@ export const HuggingFaceModelSearch: React.FC<HuggingFaceModelSearchProps> = ({
             {searchResults.map((model, index) => (
               <React.Fragment key={model.id}>
                 <ListItem disablePadding>
-                  <ListItemButton 
+                  <ListItemButton
                     onClick={() => handleLoadModel(model.id)}
                     disabled={isLoading}
-                    sx={{ 
+                    sx={{
                       opacity: isLoading && selectedModel === model.id ? 0.6 : 1,
                       cursor: isLoading ? 'wait' : 'pointer'
                     }}
