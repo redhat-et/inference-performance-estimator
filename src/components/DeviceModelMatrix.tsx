@@ -13,14 +13,21 @@ import {
   Paper,
   Slider,
   Chip,
+  IconButton,
+  Collapse,
+  Alert,
 } from '@mui/material';
-import { 
+import {
   TableChart as TableChartIcon,
   FilterList as FilterIcon,
+  Add as AddIcon,
+  ExpandMore as ExpandMoreIcon,
+  Delete as DeleteIcon,
 } from '@mui/icons-material';
-import type { GPUSpecs, ModelSpecs, QuantizationType } from '../types/calculator';
-import { DEFAULT_SYSTEM_OVERHEAD, DEFAULT_INFERENCE_PARAMS } from '../types/calculator';
+import type { GPUSpecs, ModelSpecs, QuantizationType, ModelPreset } from '../types/calculator';
+import { DEFAULT_SYSTEM_OVERHEAD, DEFAULT_INFERENCE_PARAMS, QUANTIZATION_OPTIONS } from '../types/calculator';
 import { calculatePrefillTime, calculateTimePerToken } from '../utils/calculations';
+import { HuggingFaceModelSearch } from './HuggingFaceModelSearch';
 
 // Model configurations with realistic architecture specs
 interface ModelConfig {
@@ -51,7 +58,7 @@ const MODELS: ModelConfig[] = [
     },
   },
   {
-    name: 'Granite 3.3 8B', 
+    name: 'Granite 3.3 8B',
     shortName: 'granite-3.3-8b',
     alpacaEvalScore: 62.68, // From IBM Granite 3.3-8B-Instruct benchmarks
     specs: {
@@ -71,7 +78,7 @@ const MODELS: ModelConfig[] = [
   },
   {
     name: 'Gemma 3 1B',
-    shortName: 'gemma-3-1b', 
+    shortName: 'gemma-3-1b',
     alpacaEvalScore: 35.2, // Estimated based on Gemma 3 performance
     specs: {
       parameters: 1.0,
@@ -151,10 +158,11 @@ interface DeviceModelMatrixProps {
 
 // Performance estimation using actual calculation functions
 const estimatePerformance = (gpu: GPUSpecs, model: ModelConfig, inputTokens: number = DEFAULT_INFERENCE_PARAMS.promptTokens): DeviceModelPerformance => {
-  // Basic memory check first - simplified version to avoid complex architecture validation errors
-  const modelSizeGB = model.specs.parameters * 2.0; // FP16 quantization ~2GB per billion params
+  // Basic memory check first - use actual quantization to calculate model size
+  const quantInfo = QUANTIZATION_OPTIONS.find(q => q.name === model.specs.quantization) || QUANTIZATION_OPTIONS[1]; // Default to FP16
+  const modelSizeGB = model.specs.parameters * quantInfo.bytesPerParameter; // Use actual quantization
   const canRun = modelSizeGB <= gpu.memorySize * 0.75; // Allow 75% memory usage for safety
-  
+
   if (!canRun) {
     return {
       deviceName: gpu.name,
@@ -171,7 +179,7 @@ const estimatePerformance = (gpu: GPUSpecs, model: ModelConfig, inputTokens: num
       ...model.specs,
       promptTokens: inputTokens
     };
-    
+
     // Use the actual calculation functions from calculations.ts
     const ttft = calculatePrefillTime(gpu, modelSpecsWithCustomTokens, DEFAULT_SYSTEM_OVERHEAD);
     const itl = calculateTimePerToken(gpu, modelSpecsWithCustomTokens, DEFAULT_SYSTEM_OVERHEAD);
@@ -203,15 +211,58 @@ const estimatePerformance = (gpu: GPUSpecs, model: ModelConfig, inputTokens: num
 
 
 export const DeviceModelMatrix: React.FC<DeviceModelMatrixProps> = ({ availableGPUs }) => {
+  const [customModels, setCustomModels] = useState<ModelConfig[]>([]);
+  const [showModelSearch, setShowModelSearch] = useState(false);
+  const [modelError, setModelError] = useState<string>('');
 
   const [filters, setFilters] = useState<FilterState>({
     ttftRange: [0, 10000], // Default range (0ms to 10000ms)
-    itlRange: [0, 1000],   // Default range (0ms to 1000ms) 
+    itlRange: [0, 1000],   // Default range (0ms to 1000ms)
     budgetRange: [0, 5000], // Default budget range ($0 to $5000)
     alpacaEvalRange: [0, 100], // Default AlpacaEval range (0 to 100)
     contextLengthRange: [0, 200000], // Default context length range (0 to 200K tokens)
     inputTokenCount: 512, // Default input token count (512 tokens)
   });
+
+  // Handler for adding a custom model from HuggingFace
+  const handleAddCustomModel = (model: ModelPreset) => {
+    const customModel: ModelConfig = {
+      name: model.name,
+      shortName: model.name.toLowerCase().replace(/[^a-z0-9]/g, '-'),
+      alpacaEvalScore: 50, // Default score for custom models
+      specs: {
+        parameters: model.parameters,
+        sequenceLength: model.sequenceLength,
+        batchSize: DEFAULT_INFERENCE_PARAMS.batchSize,
+        promptTokens: DEFAULT_INFERENCE_PARAMS.promptTokens,
+        outputTokens: DEFAULT_INFERENCE_PARAMS.outputTokens,
+        quantization: model.defaultQuantization || 'FP16',
+        headDimension: model.headDimension,
+        nLayers: model.nLayers,
+        nHeads: model.nHeads,
+        nKvHeads: model.nKvHeads,
+        hiddenSize: model.hiddenSize,
+        intermediateSize: model.intermediateSize,
+      },
+    };
+
+    setCustomModels(prev => [...prev, customModel]);
+    setShowModelSearch(false);
+    setModelError('');
+  };
+
+  // Handler for removing a custom model
+  const handleRemoveCustomModel = (shortName: string) => {
+    setCustomModels(prev => prev.filter(m => m.shortName !== shortName));
+  };
+
+  // Handler for model load errors
+  const handleModelError = (error: string) => {
+    setModelError(error);
+  };
+
+  // Combine default models with custom models
+  const allModels = useMemo(() => [...MODELS, ...customModels], [customModels]);
 
   // Calculate data ranges for slider bounds (TTFT depends on current input token count)
   const dataRanges = useMemo(() => {
@@ -224,11 +275,11 @@ export const DeviceModelMatrix: React.FC<DeviceModelMatrixProps> = ({ availableG
     // Collect all performance values from devices with prices only
     // Use current input token count for dynamic TTFT calculation
     const currentInputTokens = filters.inputTokenCount || 512;
-    
+
     availableGPUs
       .filter(gpu => gpu.price !== undefined)
       .forEach(gpu => {
-        MODELS.forEach(model => {
+        allModels.forEach(model => {
           try {
             const performance = estimatePerformance(gpu, model, currentInputTokens);
             if (performance.canRun) {
@@ -244,7 +295,7 @@ export const DeviceModelMatrix: React.FC<DeviceModelMatrixProps> = ({ availableG
             contextLengthValues.push(model.specs.sequenceLength);
           }
         });
-        
+
         budgetValues.push(gpu.price!); // Safe to use ! since we filtered for defined prices
       });
 
@@ -279,7 +330,7 @@ export const DeviceModelMatrix: React.FC<DeviceModelMatrixProps> = ({ availableG
         default: 512 // Default 512 tokens (reasonable prompt size)
       }
     };
-  }, [availableGPUs, filters.inputTokenCount]);
+  }, [availableGPUs, allModels, filters.inputTokenCount]);
 
   // Update filter ranges when data ranges change
   React.useEffect(() => {
@@ -302,26 +353,26 @@ export const DeviceModelMatrix: React.FC<DeviceModelMatrixProps> = ({ availableG
 
     availableGPUs.forEach(gpu => {
       matrix[gpu.name] = {};
-      MODELS.forEach(model => {
+      allModels.forEach(model => {
         const performance = estimatePerformance(gpu, model, filters.inputTokenCount);
         matrix[gpu.name][model.name] = performance;
       });
     });
-    
+
     return matrix;
-  }, [availableGPUs, filters.inputTokenCount]);
+  }, [availableGPUs, allModels, filters.inputTokenCount]);
 
   // Filter models based on AlpacaEval and context length
   const filteredModels = useMemo(() => {
     const [alpacaEvalMin, alpacaEvalMax] = filters.alpacaEvalRange;
     const [contextLengthMin, contextLengthMax] = filters.contextLengthRange;
 
-    return MODELS.filter(model => {
+    return allModels.filter(model => {
       const alpacaEvalMatch = model.alpacaEvalScore >= alpacaEvalMin && model.alpacaEvalScore <= alpacaEvalMax;
       const contextLengthMatch = model.specs.sequenceLength >= contextLengthMin && model.specs.sequenceLength <= contextLengthMax;
       return alpacaEvalMatch && contextLengthMatch;
     });
-  }, [filters.alpacaEvalRange, filters.contextLengthRange]);
+  }, [allModels, filters.alpacaEvalRange, filters.contextLengthRange]);
 
   // Filter devices and check if cell matches filter criteria (only TTFT, ITL, Budget - model filtering handled separately)
   const checkCellMatch = (performance: DeviceModelPerformance, devicePrice?: number): boolean => {
@@ -338,7 +389,7 @@ export const DeviceModelMatrix: React.FC<DeviceModelMatrixProps> = ({ availableG
     return ttftMatch && itlMatch && budgetMatch;
   };
 
-  const handleSliderChange = (field: keyof FilterState) => 
+  const handleSliderChange = (field: keyof FilterState) =>
     (_event: Event, newValue: number | number[]) => {
       if (field === 'inputTokenCount') {
         // Handle single value for input token count
@@ -374,9 +425,9 @@ export const DeviceModelMatrix: React.FC<DeviceModelMatrixProps> = ({ availableG
     <Box>
       {/* Header */}
       <Box sx={{ textAlign: 'center', py: 2, mb: 3 }}>
-        <Typography 
-          variant="h4" 
-          component="h1" 
+        <Typography
+          variant="h4"
+          component="h1"
           sx={{ fontWeight: 'bold', mb: 2 }}
         >
           AI Stack Finder
@@ -394,6 +445,67 @@ export const DeviceModelMatrix: React.FC<DeviceModelMatrixProps> = ({ availableG
             </Typography>
       </Box>
 
+      {/* Add Custom Model Card */}
+      <Card elevation={3} sx={{ mb: 3 }}>
+        <CardContent sx={{ p: 3 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+              <AddIcon sx={{ mr: 1, color: 'primary.main' }} />
+              <Typography variant="h6" component="h2">
+                Add Custom Model from HuggingFace
+              </Typography>
+            </Box>
+            <IconButton
+              onClick={() => setShowModelSearch(!showModelSearch)}
+              sx={{
+                transform: showModelSearch ? 'rotate(180deg)' : 'rotate(0deg)',
+                transition: 'transform 0.3s',
+              }}
+            >
+              <ExpandMoreIcon />
+            </IconButton>
+          </Box>
+
+          <Collapse in={showModelSearch}>
+            <Box sx={{ mb: 2 }}>
+              <Paper variant="outlined" sx={{ p: 2 }}>
+                <HuggingFaceModelSearch
+                  onModelLoad={handleAddCustomModel}
+                  onError={handleModelError}
+                />
+              </Paper>
+
+              {modelError && (
+                <Alert severity="error" sx={{ mt: 2 }} onClose={() => setModelError('')}>
+                  {modelError}
+                </Alert>
+              )}
+            </Box>
+          </Collapse>
+
+          {/* Display Custom Models */}
+          {customModels.length > 0 && (
+            <Box sx={{ mt: 2 }}>
+              <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 'medium' }}>
+                Custom Models Added: {customModels.length}
+              </Typography>
+              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                {customModels.map((model) => (
+                  <Chip
+                    key={model.shortName}
+                    label={`${model.name} (${model.specs.parameters}B)`}
+                    onDelete={() => handleRemoveCustomModel(model.shortName)}
+                    deleteIcon={<DeleteIcon />}
+                    color="primary"
+                    variant="outlined"
+                  />
+                ))}
+              </Box>
+            </Box>
+          )}
+        </CardContent>
+      </Card>
+
       {/* Filters Card */}
       <Card elevation={3} sx={{ mb: 3 }}>
         <CardContent sx={{ p: 3 }}>
@@ -403,9 +515,9 @@ export const DeviceModelMatrix: React.FC<DeviceModelMatrixProps> = ({ availableG
               Stack Requirements
             </Typography>
           </Box>
-          
-          <Box sx={{ 
-            display: 'flex', 
+
+          <Box sx={{
+            display: 'flex',
             flexDirection: { xs: 'column', sm: 'row' },
             gap: 4,
             alignItems: 'flex-start'
@@ -458,10 +570,10 @@ export const DeviceModelMatrix: React.FC<DeviceModelMatrixProps> = ({ availableG
               />
             </Box>
           </Box>
-          
+
           {/* Second row of filters */}
-          <Box sx={{ 
-            display: 'flex', 
+          <Box sx={{
+            display: 'flex',
             flexDirection: { xs: 'column', sm: 'row' },
             gap: 4,
             alignItems: 'flex-start',
@@ -532,9 +644,9 @@ export const DeviceModelMatrix: React.FC<DeviceModelMatrixProps> = ({ availableG
             <Table stickyHeader>
               <TableHead>
                 <TableRow>
-                  <TableCell 
-                    sx={{ 
-                      fontWeight: 'bold', 
+                  <TableCell
+                    sx={{
+                      fontWeight: 'bold',
                       backgroundColor: 'grey.100',
                       minWidth: 200,
                       position: 'sticky',
@@ -544,34 +656,62 @@ export const DeviceModelMatrix: React.FC<DeviceModelMatrixProps> = ({ availableG
                   >
                     Device
                   </TableCell>
-                  {filteredModels.map((model) => (
-                    <TableCell 
-                      key={model.shortName} 
-                      align="center"
-                      sx={{ 
-                        fontWeight: 'bold', 
-                        backgroundColor: 'grey.100',
-                        minWidth: 160,
-                      }}
-                    >
-                      {model.name}
-                      <br />
-                      <Typography variant="caption" color="text.secondary">
-                        {model.specs.parameters}B • {(model.specs.sequenceLength / 1000).toFixed(0)}K context
-                      </Typography>
-                      <br />
-                      <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.65rem' }}>
-                        AlpacaEval: {model.alpacaEvalScore}
-                      </Typography>
-                    </TableCell>
-                  ))}
+                  {filteredModels.map((model) => {
+                    const isCustomModel = customModels.some(cm => cm.shortName === model.shortName);
+                    return (
+                      <TableCell
+                        key={model.shortName}
+                        align="center"
+                        sx={{
+                          fontWeight: 'bold',
+                          backgroundColor: isCustomModel ? 'primary.light' : 'grey.100',
+                          minWidth: 160,
+                          position: 'relative',
+                        }}
+                      >
+                        {isCustomModel && (
+                          <IconButton
+                            size="small"
+                            onClick={() => handleRemoveCustomModel(model.shortName)}
+                            sx={{
+                              position: 'absolute',
+                              top: 4,
+                              right: 4,
+                              padding: 0.5,
+                            }}
+                          >
+                            <DeleteIcon fontSize="small" />
+                          </IconButton>
+                        )}
+                        <Box sx={{ pr: isCustomModel ? 3 : 0 }}>
+                          {model.name}
+                          {isCustomModel && (
+                            <Chip
+                              label="Custom"
+                              size="small"
+                              color="primary"
+                              sx={{ ml: 0.5, height: 16, fontSize: '0.65rem' }}
+                            />
+                          )}
+                        </Box>
+                        <br />
+                        <Typography variant="caption" color="text.secondary">
+                          {model.specs.parameters}B • {(model.specs.sequenceLength / 1000).toFixed(0)}K context
+                        </Typography>
+                        <br />
+                        <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.65rem' }}>
+                          AlpacaEval: {model.alpacaEvalScore}
+                        </Typography>
+                      </TableCell>
+                    );
+                  })}
                 </TableRow>
               </TableHead>
               <TableBody>
                 {filteredGPUs.map((gpu) => (
                   <TableRow key={gpu.name}>
-                    <TableCell 
-                      sx={{ 
+                    <TableCell
+                      sx={{
                         fontWeight: 'medium',
                         position: 'sticky',
                         left: 0,
@@ -592,7 +732,7 @@ export const DeviceModelMatrix: React.FC<DeviceModelMatrixProps> = ({ availableG
                           {gpu.memorySize}GB • {gpu.memoryBandwidth}GB/s
                         </Typography>
                         {gpu.price && (
-                          <Chip 
+                          <Chip
                             label={`$${gpu.price.toLocaleString()}`}
                             size="small"
                             color="secondary"
@@ -604,20 +744,20 @@ export const DeviceModelMatrix: React.FC<DeviceModelMatrixProps> = ({ availableG
                     {filteredModels.map((model) => {
                       const performance = performanceMatrix[gpu.name]?.[model.name];
                       const isMatch = performance && checkCellMatch(performance, gpu.price);
-                      
+
                       return (
-                        <TableCell 
+                        <TableCell
                           key={model.shortName}
                           align="center"
                           sx={{
-                            backgroundColor: !performance?.canRun 
+                            backgroundColor: !performance?.canRun
                               ? 'grey.200'
-                              : isMatch 
-                                ? 'success.light' 
+                              : isMatch
+                                ? 'success.light'
                                 : 'background.paper',
-                            color: !performance?.canRun 
+                            color: !performance?.canRun
                               ? 'text.disabled'
-                              : isMatch 
+                              : isMatch
                                 ? 'success.contrastText'
                                 : 'text.primary',
                           }}
@@ -648,38 +788,38 @@ export const DeviceModelMatrix: React.FC<DeviceModelMatrixProps> = ({ availableG
           {/* Legend */}
           <Box sx={{ mt: 2, display: 'flex', gap: 2, flexWrap: 'wrap' }}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <Box 
-                sx={{ 
-                  width: 16, 
-                  height: 16, 
+              <Box
+                sx={{
+                  width: 16,
+                  height: 16,
                   backgroundColor: 'success.light',
                   border: '1px solid',
                   borderColor: 'success.main',
-                }} 
+                }}
               />
               <Typography variant="caption">Matches filters</Typography>
             </Box>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <Box 
-                sx={{ 
-                  width: 16, 
-                  height: 16, 
+              <Box
+                sx={{
+                  width: 16,
+                  height: 16,
                   backgroundColor: 'background.paper',
                   border: '1px solid',
                   borderColor: 'divider',
-                }} 
+                }}
               />
               <Typography variant="caption">Available but doesn't match filters</Typography>
             </Box>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <Box 
-                sx={{ 
-                  width: 16, 
-                  height: 16, 
+              <Box
+                sx={{
+                  width: 16,
+                  height: 16,
                   backgroundColor: 'grey.200',
                   border: '1px solid',
                   borderColor: 'grey.400',
-                }} 
+                }}
               />
               <Typography variant="caption">Model won't fit in device memory</Typography>
             </Box>
